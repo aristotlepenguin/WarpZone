@@ -43,14 +43,21 @@ return function(mod)
     ---@param knife EntityFamiliar
     function WarpZone:UpdateJohnnysKnife(knife)
         local data = knife:GetData()
+        local player = knife.Player
         local var = knife.Variant == WarpZone.JOHNNYS_KNIVES.ENT.SAD
+
+        local useMouse = Options.MouseControl and player.ControllerIndex == 0 and Input.IsMouseBtnPressed(0)
+
         if not knife.Target and WarpZone.JohnnysKnivesEffectType == 1 then
             knife.FireCooldown = 0
-            knife:PickEnemyTarget ( 220, 5, 17, knife.Player:GetShootingJoystick(), 90 )
+            knife:PickEnemyTarget ( 220, 5, 17, 
+                useMouse and (Input.GetMousePosition(true) - player.Position):Normalized() or player:GetShootingJoystick(),
+                90 )
         end
         knife.State = 1
+        local isshooting = player:GetShootingJoystick():Length()>0.1 or useMouse
         if knife.Target and 
-        (WarpZone.JohnnysKnivesEffectType == 2 or knife.Player:GetShootingJoystick():Length()>0.1) then
+        (WarpZone.JohnnysKnivesEffectType == 2 or isshooting) then
 
             knife.State = 2
             if knife.FireCooldown <= 0 then
@@ -68,26 +75,29 @@ return function(mod)
             else
                 knife.Velocity = knife.Velocity:Resized(25)
             end
-            if WarpZone.JohnnysKnivesEffectType == 1 and knife.Target.Position:Distance(knife.Player.Position) > 320 then
+            if WarpZone.JohnnysKnivesEffectType == 1 and knife.Target.Position:Distance(player.Position) > 320 then
                 knife.Target = nil
             end
-        elseif knife.Player.Position:Distance(knife.Position) > 25 then
+        elseif player.Position:Distance(knife.Position) > 25 then
             knife.State = 2
-            local tarvel = (knife.Player.Position-knife.Position):Resized(20)
+            local tarvel = (player.Position-knife.Position):Resized(20)
             knife.Velocity = knife.Velocity * 0.8 + tarvel * 0.2
         end
         knife.FireCooldown = knife.FireCooldown - 1
         if knife.State == 1 then
             knife.FireCooldown = 0
+            if Options.MouseControl and player.ControllerIndex == 0 then
+                knife.Target = nil
+            end
         end
 
-        local room = game:GetRoom()
+        --[[local room = game:GetRoom()
 
-        if knife.FrameCount % 5 == 0 then
+        iif knife.FrameCount % 5 == 0 then
             local pos = knife.Position
             local grid = room:GetGridEntityFromPos(pos)
 
-            if grid and grid:Hurt(1) then
+            f grid and grid:Hurt(1) then
             end
             for i=0, 360-45, 45 do
                 local pos = knife.Position + Vector.FromAngle(i):Resized(10)
@@ -97,7 +107,7 @@ return function(mod)
                         
                 end
             end
-        end
+        end]]
     end
 
     WarpZone:AddCallback(ModCallbacks.MC_FAMILIAR_UPDATE, WarpZone.UpdateJohnnysKnife, WarpZone.JOHNNYS_KNIVES.ENT.HAPPY)
